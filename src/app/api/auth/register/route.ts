@@ -101,10 +101,17 @@ export async function POST(req: NextRequest) {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Register Error]:', error);
+    const message =
+      !process.env.DATABASE_URL
+        ? 'DATABASE_URL environment variable is missing in Vercel settings.'
+        : error?.message?.includes('connect') || error?.message?.includes('reach database')
+        ? 'Cannot reach database. Please ensure DATABASE_URL uses the Supabase IPv4 pooler.'
+        : error?.message || 'Registration failed';
+
     return NextResponse.json(
-      { error: 'INTERNAL_ERROR', message: 'Registration failed' },
+      { error: 'INTERNAL_ERROR', message },
       { status: 500 }
     );
   }
