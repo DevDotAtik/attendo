@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum DeviceResetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum RecordStatus {
+  PRESENT
+  FLAGGED
+  APPROVED_BY_TEACHER
+  REJECTED_BY_TEACHER
+}
+
+model User {
+  id           String          @id @default(uuid())
+  role         Role
+  name         String
+  email        String          @unique
+  passwordHash String
+  createdAt    DateTime        @default(now())
+
+  studentProfile      StudentProfile?
+  device              Device?
+  refreshTokens       RefreshToken[]
+  formTemplates       FormTemplate[]       @relation("TeacherTemplates")
+  sessions            AttendanceSession[]  @relation("TeacherSessions")
+  attendanceRecords   AttendanceRecord[]   @relation("StudentRecords")
+  deviceResetRequests DeviceResetRequest[] @relation("StudentResetRequests")
+  reviewedResets      DeviceResetRequest[] @relation("TeacherReviewedResets")
+  trustedIps          TrustedIp[]          @relation("TeacherTrustedIps")
+  auditLogs           AuditLog[]           @relation("ActorAuditLogs")
+
+  @@index([email])
+}
+
+model StudentProfile {
+  userId      String  @id
+  rollNo      String
+  institution String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([rollNo])
+}
+
+model Device {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  credentialId     String   @unique
+  credentialIdHash String   @unique
+  publicKey        String
+  counter          BigInt   @default(0)
+  transports       String[] @default([])
+  boundAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([credentialIdHash])
+}
+
+model DeviceResetRequest {
+  id         String            @id @default(uuid())
+  studentId  String
+  status     DeviceResetStatus @default(PENDING)
+  reviewedBy String?
+  createdAt  DateTime          @default(now())
+
+  student  User  @relation("StudentResetRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("TeacherReviewedResets", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([studentId, status])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model FormTemplate {
+  id        String   @id @default(uuid())
+  teacherId String
+  title     String
+  fields    Json
+  createdAt DateTime @default(now())
+
+  teacher  User                @relation("TeacherTemplates", fields: [teacherId], references: [id], onDelete: Cascade)
+  sessions AttendanceSession[]
+
+  @@index([teacherId])
+}
+
+model AttendanceSession {
+  id             String        @id @default(uuid())
+  teacherId      String
+  templateId     String
+  boardTokenHash String        @unique
+  anchorLat      Float
+  anchorLng      Float
+  anchorAccuracy Float
+  radiusM        Float         @default(100)
+  startsAt       DateTime      @default(now())
+  endsAt         DateTime
+  status         SessionStatus @default(ACTIVE)
+  closedAt       DateTime?
+
+  teacher User         @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  template FormTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  records  AttendanceRecord[]
+
+  @@index([teacherId])
+  @@index([boardTokenHash])
+  @@index([status])
+}
+
+model AttendanceRecord {
+  id               String       @id @default(uuid())
+  sessionId        String
+  studentId        String?
+  credentialIdHash String
+  formData         Json
+  distanceM        Float
+  status           RecordStatus @default(PRESENT)
+  flags            String[]     @default([])
+  ip               String
+  userAgent        String
+  submittedAt      DateTime     @default(now())
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User?             @relation("StudentRecords", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, credentialIdHash])
+  @@index([sessionId])
+  @@index([studentId])
+}
+
+model TrustedIp {
+  id        String @id @default(uuid())
+  teacherId String
+  cidr      String
+
+  teacher User @relation("TeacherTrustedIps", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  action    String
+  targetId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  actor User @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+}
