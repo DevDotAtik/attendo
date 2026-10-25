@@ -26,7 +26,11 @@ export async function GET(
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
   const proto = req.headers.get('x-forwarded-proto') || 'http';
-  const envBase = process.env.NEXT_PUBLIC_BASE_URL;
+  const envBase =
+    process.env.NEXT_BASE_URL ||
+    process.env.BASE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
   const baseUrl =
     envBase && !envBase.includes('localhost') && !envBase.includes('127.0.0.1')
       ? envBase

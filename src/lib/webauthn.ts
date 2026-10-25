@@ -6,8 +6,12 @@ import {
 } from '@simplewebauthn/server';
 
 export const RP_NAME = process.env.RP_NAME || 'AttendSheets';
-export const RP_ID = process.env.RP_ID || 'localhost';
-export const RP_ORIGIN = process.env.RP_ORIGIN || 'http://localhost:3000';
+export const RP_ID =
+  process.env.RP_ID ||
+  (process.env.VERCEL_URL ? process.env.VERCEL_URL.replace(/^https?:\/\//, '') : 'localhost');
+export const RP_ORIGIN =
+  process.env.RP_ORIGIN ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export async function createRegistrationOptions(user: {
   id: string;

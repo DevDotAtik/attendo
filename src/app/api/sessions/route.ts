@@ -119,7 +119,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const proto = req.headers.get('x-forwarded-proto') || 'https';
+    const envBase =
+      process.env.NEXT_BASE_URL ||
+      process.env.BASE_URL ||
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+    const baseUrl = envBase || (host ? `${proto}://${host}` : 'http://localhost:3000');
     const boardUrl = `${baseUrl}/board/${boardToken}`;
 
     return NextResponse.json(
