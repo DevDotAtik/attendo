@@ -122,7 +122,7 @@ vi.mock('@/lib/prisma', () => ({
       }),
       updateMany: vi.fn(async ({ where, data }) => {
         let count = 0;
-        for (const token of mockDb.refreshTokens.values()) {
+        for (const token of Array.from(mockDb.refreshTokens.values())) {
           if (where.userId && token.userId === where.userId && (where.revokedAt === null ? token.revokedAt === null : true)) {
             if (data.revokedAt) token.revokedAt = data.revokedAt;
             count++;

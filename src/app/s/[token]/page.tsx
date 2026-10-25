@@ -279,7 +279,7 @@ export default function StudentAttendancePage({
             </div>
             <button
               type="button"
-              onClick={proceedWithoutLocation}
+              onClick={() => proceedWithoutLocation()}
               className="text-xs text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 underline transition-colors"
             >
               Taking long? Continue without GPS (Flagged for review)
@@ -491,7 +491,7 @@ export default function StudentAttendancePage({
               {errorCode !== 'QR_EXPIRED' && errorCode !== 'ALREADY_MARKED' && errorCode !== 'ROLL_ALREADY_MARKED' && (
                 <button
                   type="button"
-                  onClick={proceedWithoutLocation}
+                  onClick={() => proceedWithoutLocation()}
                   className="w-full py-2.5 px-4 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 text-xs font-bold rounded-xl transition-colors"
                 >
                   Continue without location (Submit for review)
